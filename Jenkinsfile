@@ -1,31 +1,22 @@
-pipeline {
-  agent any
-  stages {
-    stage('Unit Test') {
-      steps {
-        sh 'mvn clean test'
-      }
+pipeline{
+    agent any
+    tools {nodejs "nodejs"}
+    stages{
+        stage('build'){
+            steps{
+                sh 'npm install'
+                sh 'npm build'
+            }
+        }
+
+        stage('deploy'){
+            steps{
+                nodejs(nodeJSInstallationName: 'nodejs') {
+                    withAWS(credentials: 'aws-credentials') {
+                        sh 'serverless deploy'
+                    }
+                }
+            }
+        }
     }
-    stage('Deploy Standalone') {
-      steps {
-        sh 'mvn deploy -P standalone'
-      }
-    }
-    stage('Deploy AnyPoint') {
-      environment {
-        ANYPOINT_CREDENTIALS = credentials('anypoint.credentials')
-      }
-      steps {
-        sh 'mvn deploy -P arm -Darm.target.name=local-4.0.0-ee -Danypoint.username=${ANYPOINT_CREDENTIALS_USR}  -Danypoint.password=${ANYPOINT_CREDENTIALS_PSW}'
-      }
-    }
-    stage('Deploy CloudHub') {
-      environment {
-        ANYPOINT_CREDENTIALS = credentials('anypoint.credentials')
-      }
-      steps {
-        sh 'mvn deploy -P cloudhub -Dmule.version=4.0.0 -Danypoint.username=${ANYPOINT_CREDENTIALS_USR} -Danypoint.password=${ANYPOINT_CREDENTIALS_PSW}'
-      }
-    }
-  }
-}
+} 
